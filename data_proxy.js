@@ -69,7 +69,7 @@ DataProxy.prototype.loadData = function () {
 
 };
 
-DataProxy.prototype.update_data = function (group_name, user_name, type, length, time, wechat_proxy, group_code) {
+DataProxy.prototype.update_data = function (group_name, user_name, type, length, time, wechat_proxy, group_code, text) {
     var self = this;
 
     var timeStr = (new Date(time * 1000)).toLocaleString();
@@ -93,7 +93,18 @@ DataProxy.prototype.update_data = function (group_name, user_name, type, length,
         }
     }
 
-    var updateNewRecord = function (user_id) {
+    var user_id = null;
+
+    var reply = function () {
+        wechat_proxy.sendTextMsg(wechat_proxy.user_info.UserName, group_code, "本次发言得分：" + point).then(
+            function () {
+            },
+            function () {
+            }
+        );
+    }
+
+    var updateNewRecord = function () {
         var sql_insert_record = "insert into " + record_table + "(user_id, group_id, length, time, create_time) values(?,?,?,?,?)";
         var Params = [user_id, group_id, length, time, timeStr];
         mysql_proxy.query(sql_insert_record, Params).then(
@@ -103,7 +114,7 @@ DataProxy.prototype.update_data = function (group_name, user_name, type, length,
                 var Params1 = [user_id, group_id, type, record_id, point, timeStr];
                 mysql_proxy.query(sql_insert_score, Params1).then(
                     function () {
-
+                        reply();
                     },
                     function () {
 
@@ -116,15 +127,164 @@ DataProxy.prototype.update_data = function (group_name, user_name, type, length,
         );
     }
 
+    var checkCmd = function () {
+        if (type == 1) {
+            var strArr = text.split(":");
+            if (text.toLowerCase() == "rank") {
+                if (group_id) {
+                    let sql = 'SELECT users.user_name,score.total from (SELECT user_id, sum(point) as total FROM his_score where group_id = ? group by user_id) AS score right join (SELECT * from users where group_id = ?) AS users on users.id = score.user_id where score.total is not NULL order by score.total desc limit 10';
+                    let sqlParams = [group_id, group_id];
+                    mysql_proxy.query(sql, sqlParams).then(
+                        function (ret) {
+                            if (ret.length) {
+                                console.log("排名：", ret);
+                                let retStr = "";
+                                for (var rank_info of ret) {
+                                    retStr += rank_info.user_name + ":  " + rank_info.total + "\r\n";
+                                }
+
+                                wechat_proxy.sendTextMsg(wechat_proxy.user_info.UserName, group_code, retStr).then(
+                                    function () {
+                                    },
+                                    function () {
+                                    }
+                                );
+                            }
+                            else {
+                            }
+                        },
+                        function () {
+                        }
+                    );
+                }
+            }
+            else {
+                switch (strArr[0].toLowerCase()) {
+                    case "point":
+                        if (group_id && (strArr[1] != undefined)) {
+                            let sql = 'SELECT * FROM users where user_name = ? and group_id = ?';
+                            let sqlParams = [strArr[1], group_id];
+                            mysql_proxy.query(sql, sqlParams).then(
+                                function (ret) {
+                                    if (ret.length) {
+                                        var tar_user_id = ret[0].id;
+                                        console.log("用户ID: ", tar_user_id);
+
+                                        let sql_score = 'SELECT sum(point) as total FROM his_score where user_id = ? and group_id = ?';
+                                        let sqlParams_score = [tar_user_id, group_id];
+                                        mysql_proxy.query(sql_score, sqlParams_score).then(
+                                            function (ret) {
+                                                if (ret.length) {
+                                                    console.log("得分：", ret[0].total);
+                                                    wechat_proxy.sendTextMsg(wechat_proxy.user_info.UserName, group_code, strArr[1] + "总得分：" + ret[0].total).then(
+                                                        function () {
+                                                        },
+                                                        function () {
+                                                        }
+                                                    );
+                                                }
+                                                else {
+                                                }
+                                            },
+                                            function () {
+                                            }
+                                        );
+                                    }
+                                    else {
+                                    }
+                                },
+                                function () {
+                                }
+                            );
+                        }
+                        break;
+                    case "audio":
+                        if (group_id && (strArr[1] != undefined)) {
+                            let sql = 'SELECT * FROM users where user_name = ? and group_id = ?';
+                            let sqlParams = [strArr[1], group_id];
+                            mysql_proxy.query(sql, sqlParams).then(
+                                function (ret) {
+                                    if (ret.length) {
+                                        var tar_user_id = ret[0].id;
+                                        console.log("用户ID: ", tar_user_id);
+
+                                        let sql_voice = 'SELECT time FROM user_voice_records where user_id = ? and group_id = ? order by time asc';
+                                        let sqlParams_voice = [tar_user_id, group_id];
+                                        mysql_proxy.query(sql_voice, sqlParams_voice).then(
+                                            function (ret) {
+                                                if (ret.length) {
+                                                    console.log("语音消息：", ret);
+                                                    var clips = [];
+                                                    for (var piece of ret) {
+                                                        let curFile = piece.time + ".mp3";
+
+                                                        if (fs.existsSync(voice_path + group_name + '/' + strArr[1] + '/' + curFile)) {
+                                                            clips.push(piece.time + ".mp3");
+                                                        }
+                                                    }
+
+                                                    var timestamp = Date.now();
+                                                    let tarFile = timestamp + ("" + Math.random().toFixed(4)).substring(2, 6) + '.mp3';
+                                                    let tarPath = './tmp/' + tarFile;
+                                                    audio_proxy.concatAudio(clips, voice_path + group_name + '/' + strArr[1] + '/', tarPath).then(
+                                                        function () {
+                                                            console.log(TAG, "合并语音成功");
+                                                            wechat_proxy.uploadFile(tarFile, './tmp/', wechat_proxy.user_info.UserName, "filehelper").then(
+                                                                function (result) {
+                                                                    console.log(TAG, "上传文件最终成功！");
+                                                                    wechat_proxy.sendFileMsg(wechat_proxy.user_info.UserName, group_code, result.MediaId, strArr[1] + '.mp3', result.StartPos).then(
+                                                                        function () {
+
+                                                                        },
+                                                                        function () {
+
+                                                                        }
+                                                                    );
+                                                                },
+                                                                function () {
+                                                                    console.log(TAG, "上传文件最终失败！");
+                                                                }
+                                                            );
+                                                        },
+                                                        function () {
+                                                            console.log(TAG, "合并语音失败");
+                                                        }
+                                                    );
+                                                }
+                                                else {
+                                                }
+                                            },
+                                            function () {
+                                            }
+                                        );
+                                    }
+                                },
+                                function () {
+                                }
+                            );
+                        }
+                        break;
+                    default:
+                        updateNewRecord();
+                        break;
+                }
+
+            }
+        }
+        else {
+            updateNewRecord();
+        }
+
+    }
+
     var sql = 'SELECT * FROM users where user_name = ? and group_id = ?';
     var sqlParams = [user_name, group_id];
 
     mysql_proxy.query(sql, sqlParams).then(
         function (ret) {
-            var user_id = null;
             if (ret.length) {
                 user_id = ret[0].id;
-                updateNewRecord(user_id);
+                checkCmd();
             }
             else {
                 var sql_insert_user = "insert into users(user_name, group_id) values(?,?)";
@@ -132,7 +292,7 @@ DataProxy.prototype.update_data = function (group_name, user_name, type, length,
                 mysql_proxy.query(sql_insert_user, Params_user).then(
                     function (ret) {
                         user_id = ret.insertId;
-                        updateNewRecord(user_id);
+                        checkCmd();
                     },
                     function () {
 
@@ -145,12 +305,7 @@ DataProxy.prototype.update_data = function (group_name, user_name, type, length,
         }
     );
 
-    wechat_proxy.sendTextMsg(wechat_proxy.user_info.UserName, group_code, "本次发言得分：" + point).then(
-        function () {
-        },
-        function () {
-        }
-    );
+
 }
 
 DataProxy.prototype.checkpoint = function (type, length) {
@@ -241,7 +396,7 @@ DataProxy.prototype.user_cmd = function (userCode, cmdStr, wechat_proxy) {
                 }
             }
             if (group_id) {
-                let sql = 'SELECT users.user_name,score.total from (SELECT user_id, sum(point) as total FROM his_score where group_id = ? group by user_id) AS score right join (SELECT * from users where group_id = ?) AS users on users.id = score.user_id where score.total is not NULL order by score.total desc';
+                let sql = 'SELECT users.user_name,score.total from (SELECT user_id, sum(point) as total FROM his_score where group_id = ? group by user_id) AS score right join (SELECT * from users where group_id = ?) AS users on users.id = score.user_id where score.total is not NULL order by score.total desc limit 10';
                 let sqlParams = [group_id, group_id];
                 mysql_proxy.query(sql, sqlParams).then(
                     function (ret) {

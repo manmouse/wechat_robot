@@ -534,9 +534,9 @@ WeChatProxy.prototype.webWxSync = function () {
             res.on('end', () => {
                 var data = JSON.parse(buf);
                 var checkMsg = function (msg) {
-                    var msgArr = msg.Content.split(":");
+                    var msgArr = msg.Content.split(":<br/>");
                     var sender = msgArr[0];
-                    var detail = msgArr[1].split("<br/>")[1];
+                    var detail = msgArr[1];
                     if (msg.MsgType == 34) {
                         console.log(TAG, "语音消息：", msg.MsgId, msg.VoiceLength);
 
@@ -593,7 +593,7 @@ WeChatProxy.prototype.webWxSync = function () {
                         console.log(TAG, "文字消息：", detail, length);
 
                         //var curTime = (new Date()).toLocaleString();
-                        data_proxy.update_data(self.groups[msg.FromUserName].NickName, self.groups[msg.FromUserName].members[sender], 1, length, msg.CreateTime, self, msg.FromUserName);
+                        data_proxy.update_data(self.groups[msg.FromUserName].NickName, self.groups[msg.FromUserName].members[sender], 1, length, msg.CreateTime, self, msg.FromUserName, detail);
                     }
 
                 };
