@@ -177,11 +177,11 @@ DataProxy.prototype.user_cmd = function (userCode, cmdStr, wechat_proxy) {
 
     var self = this;
     var group_id = null, user_id = null;
-    var strArr = cmdStr.split("::");
+    var strArr = cmdStr.split(":");
     switch (strArr[0].toLowerCase()) {
         case "point":
             console.log("获取得分情况");
-            let detailArr = strArr[1].split("@@");
+            let detailArr = strArr[1].split("@");
 
             if (detailArr.length == 2) {
                 console.log("对象：" + detailArr[0], "讨论组：" + detailArr[1]);
@@ -269,7 +269,7 @@ DataProxy.prototype.user_cmd = function (userCode, cmdStr, wechat_proxy) {
             break;
         case "audio":
             console.log("获取语音信息");
-            let infoArr = strArr[1].split("@@");
+            let infoArr = strArr[1].split("@");
 
             if (infoArr.length == 2) {
                 console.log("对象：" + infoArr[0], "讨论组：" + infoArr[1]);

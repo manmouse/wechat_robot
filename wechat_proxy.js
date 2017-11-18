@@ -401,7 +401,7 @@ WeChatProxy.prototype.syncCheck = function () {
 
             res.on('end', () => {
                 var arr = buf.split("=");
-                if (!arr[1]) {
+                if (!arr[1] || arr[1] == undefined) {
                     reject(-1);
                 }
                 var retCode_arr = arr[1].split(",");
