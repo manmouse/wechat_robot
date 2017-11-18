@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "mysql": "^2.15.0",
+    "xmldom": "^0.1.27",
+    "xpath.js": "^1.0.7"
+  }
+}
