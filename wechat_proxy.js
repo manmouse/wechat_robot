@@ -552,7 +552,7 @@ WeChatProxy.prototype.webWxSync = function () {
                                     else {
                                         self.getVoice(msg.MsgId, path, create_time).then(
                                             function () {
-                                                data_proxy.update_data(self.groups[msg.FromUserName].NickName, self.groups[msg.FromUserName].members[sender], 2, msg.VoiceLength, create_time, self, msg.FromUserName);
+                                                data_proxy.update_data(self.groups[msg.FromUserName].NickName, self.groups[msg.FromUserName].members[sender], 2, msg.VoiceLength, create_time, self, msg.FromUserName, '', self.groups[msg.FromUserName].memberCount);
                                             },
                                             function () {
                                             });
@@ -561,7 +561,7 @@ WeChatProxy.prototype.webWxSync = function () {
                             } else {
                                 self.getVoice(msg.MsgId, path, create_time).then(
                                     function () {
-                                        data_proxy.update_data(self.groups[msg.FromUserName].NickName, self.groups[msg.FromUserName].members[sender], 2, msg.VoiceLength, create_time, self, msg.FromUserName);
+                                        data_proxy.update_data(self.groups[msg.FromUserName].NickName, self.groups[msg.FromUserName].members[sender], 2, msg.VoiceLength, create_time, self, msg.FromUserName, '', self.groups[msg.FromUserName].memberCount);
                                     },
                                     function () {
                                     });
@@ -593,7 +593,7 @@ WeChatProxy.prototype.webWxSync = function () {
                         console.log(TAG, "文字消息：", detail, length);
 
                         //var curTime = (new Date()).toLocaleString();
-                        data_proxy.update_data(self.groups[msg.FromUserName].NickName, self.groups[msg.FromUserName].members[sender], 1, length, msg.CreateTime, self, msg.FromUserName, detail);
+                        data_proxy.update_data(self.groups[msg.FromUserName].NickName, self.groups[msg.FromUserName].members[sender], 1, length, msg.CreateTime, self, msg.FromUserName, detail, self.groups[msg.FromUserName].memberCount);
                     }
 
                 };
@@ -812,6 +812,7 @@ WeChatProxy.prototype.getBatchContact = function (listCount, groupList) {
                         let tmp_obj = {};
                         tmp_obj.UserName = data.ContactList[i].UserName;
                         tmp_obj.NickName = data.ContactList[i].NickName;
+                        tmp_obj.memberCount = data.ContactList[0].MemberList.length;
                         tmp_obj.members = {};
                         for (let j = 0; j < data.ContactList[0].MemberList.length; j++) {
                             tmp_obj.members[data.ContactList[0].MemberList[j].UserName] = data.ContactList[0].MemberList[j].NickName;

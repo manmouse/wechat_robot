@@ -69,18 +69,24 @@ DataProxy.prototype.loadData = function () {
 
 };
 
-DataProxy.prototype.update_data = function (group_name, user_name, type, length, time, wechat_proxy, group_code, text) {
+DataProxy.prototype.update_data = function (group_name, user_name, type, length, time, wechat_proxy, group_code, text, memberCount) {
     var self = this;
 
     var timeStr = (new Date(time * 1000)).toLocaleString();
     var point = this.checkpoint(type, length);
     var record_table = null;
+    var msgTypeStr = "";
+    var lenStr = "";
     switch (type) {
         case 1:
             record_table = "user_text_records";
+            msgTypeStr = "文字";
+            lenStr = length + "字";
             break;
         case 2:
             record_table = "user_voice_records";
+            msgTypeStr = "语音";
+            lenStr = length / 1000 + "秒";
             break;
         default:
             break;
@@ -96,12 +102,51 @@ DataProxy.prototype.update_data = function (group_name, user_name, type, length,
     var user_id = null;
 
     var reply = function () {
-        wechat_proxy.sendTextMsg(wechat_proxy.user_info.UserName, group_code, "本次发言得分：" + point).then(
-            function () {
-            },
-            function () {
-            }
-        );
+        if (group_id) {
+            let sql = 'SELECT users.user_name,score.total from (SELECT user_id, sum(point) as total FROM his_score where group_id = ? group by user_id) AS score right join (SELECT * from users where group_id = ?) AS users on users.id = score.user_id where score.total is not NULL order by score.total desc';
+            let sqlParams = [group_id, group_id];
+            mysql_proxy.query(sql, sqlParams).then(
+                function (ret) {
+                    if (ret.length) {
+                        let not_behind = 0;
+                        let score = -1;
+                        for (var rank_info of ret) {
+                            retStr += rank_info.user_name + ":  " + rank_info.total + "\r\n";
+                            if (rank_info.user_name == user_name) {
+                                score = rank_info.total;
+                            }
+
+                            if (rank_info.total >= score) {
+                                not_behind++;
+                            }
+                            else {
+                                break;
+                            }
+                        }
+
+                        let beat = Math.round((memberCount - not_behind - 1) * 100 / (memberCount - 2));
+                        console.log("群总人数：", memberCount);
+                        var retStr = "";
+                        if (point == 0) {
+                            retStr = `加油${user_name}，您刚完成了${lenStr}的${msgTypeStr}作业，本次作业没有达标哦，请继续努力。您本轮目前总分${score}，打败了${beat}%的选手。加油！`;
+                        }
+                        else {
+                            retStr = `加油${user_name}，您刚完成了${lenStr}的${msgTypeStr}作业，又得${point}分。您本轮目前总分${score}，打败了${beat}%的选手。加油！`;
+                        }
+                        wechat_proxy.sendTextMsg(wechat_proxy.user_info.UserName, group_code, retStr).then(
+                            function () {
+                            },
+                            function () {
+                            }
+                        );
+                    }
+                    else {
+                    }
+                },
+                function () {
+                }
+            );
+        }
     }
 
     var updateNewRecord = function () {
