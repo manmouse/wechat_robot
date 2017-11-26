@@ -10,12 +10,14 @@ const data_proxy = require('./data_proxy.js').getInstance();
 
 // export NODE_PATH="/usr/lib/node_modules:/usr/local/lib/node_modules"
 
+const WX_HOST = "wx2.qq.com";
+
 var TAG = "wechat_proxy::";
 
 var wechat_login = {
     wechat_login_host: "https://login.weixin.qq.com/jslogin?",
     appid: "wx782c26e4c19acffb",
-    redirect_uri: "https%3A%2F%2Fwx.qq.com%2Fcgi-bin%2Fmmwebwx-bin%2Fwebwxnewloginpage",
+    redirect_uri: "https%3A%2F%2F" + WX_HOST + "%2Fcgi-bin%2Fmmwebwx-bin%2Fwebwxnewloginpage",
     fun: "new",
     lang: "zh_CN"
 }
@@ -25,13 +27,13 @@ var wechat_qrcode = {
 }
 
 var wechat_reqForScan = {
-    wechat_reqForScan_host: "https://login.wx.qq.com/cgi-bin/mmwebwx-bin/login?",
+    wechat_reqForScan_host: "https://login." + WX_HOST + "/cgi-bin/mmwebwx-bin/login?",
     loginicon: true,
     tip: 1 //未扫码为1，扫码后为0
 }
 
 var wechat_synccheck = {
-    wechat_synccheck_host: "https://webpush.wx.qq.com/cgi-bin/mmwebwx-bin/synccheck?"
+    wechat_synccheck_host: "https://webpush." + WX_HOST + "/cgi-bin/mmwebwx-bin/synccheck?"
 }
 
 function WeChatProxy() {
@@ -248,7 +250,7 @@ WeChatProxy.prototype.initPage = function () {
 
         var timestamp = Date.now();
         var options = {
-            host: "wx.qq.com",
+            host: WX_HOST,
             path: "/cgi-bin/mmwebwx-bin/webwxinit?r=" + timestamp + "&lang=zh_CN&pass_ticket=" + self.pass_ticket,
             method: 'POST',
             headers: {
@@ -283,7 +285,7 @@ WeChatProxy.prototype.initPage = function () {
                     resolve();
                 }
                 else {
-                    console.log(TAG, "初始化微信失败！");
+                    console.log(TAG, "初始化微信失败！", data);
                     reject(-1);
                 }
             });
@@ -319,7 +321,7 @@ WeChatProxy.prototype.statusNotify = function () {
         console.log(post_data);
 
         var options = {
-            host: "wx.qq.com",
+            host: WX_HOST,
             path: "/cgi-bin/mmwebwx-bin/webwxstatusnotify?pass_ticket=" + self.pass_ticket,
             method: 'POST',
             headers: {
@@ -380,7 +382,7 @@ WeChatProxy.prototype.syncCheck = function () {
         var get_data = JSON.stringify({});
 
         var options = {
-            host: "webpush.wx.qq.com",
+            host: "webpush." + WX_HOST,
             path: "/cgi-bin/mmwebwx-bin/synccheck?" + "r=" + timestamp + "&skey=" + encodeURIComponent(self.skey) + "&sid=" + self.wxsid + "&uin=" + self.wxuin + "&deviceid=" + deviceId + "&synckey=" + encodeURIComponent(synckey) + "&_=" + timestamp,
             method: 'GET',
             headers: {
@@ -458,7 +460,7 @@ WeChatProxy.prototype.getContact = function () {
         var get_data = JSON.stringify({});
 
         var options = {
-            host: "wx.qq.com",
+            host: WX_HOST,
             path: "/cgi-bin/mmwebwx-bin/webwxgetcontact?" + "lang=zh_CN&pass_ticket=" + self.pass_ticket + "&r=" + timestamp + "&seq=0&skey=" + self.skey,
             method: 'GET',
             headers: {
@@ -512,7 +514,7 @@ WeChatProxy.prototype.webWxSync = function () {
         console.log(post_data);
 
         var options = {
-            host: "wx.qq.com",
+            host: WX_HOST,
             path: "/cgi-bin/mmwebwx-bin/webwxsync?sid=" + self.wxsid + "&skey=" + self.skey + "&lang=zh_CN&pass_ticket=" + self.pass_ticket,
             method: 'POST',
             headers: {
@@ -552,7 +554,7 @@ WeChatProxy.prototype.webWxSync = function () {
                                     else {
                                         self.getVoice(msg.MsgId, path, create_time).then(
                                             function () {
-                                                data_proxy.update_data(self.groups[msg.FromUserName].NickName, self.groups[msg.FromUserName].members[sender], 2, msg.VoiceLength, create_time, self, msg.FromUserName, '', self.groups[msg.FromUserName].memberCount);
+                                                data_proxy.update_data(self.groups[msg.FromUserName].NickName, self.groups[msg.FromUserName].members[sender], 2, msg.VoiceLength, create_time, self, msg.FromUserName, '', self.groups[msg.FromUserName].memberCount, self.groups[msg.FromUserName].adminCount);
                                             },
                                             function () {
                                             });
@@ -561,7 +563,7 @@ WeChatProxy.prototype.webWxSync = function () {
                             } else {
                                 self.getVoice(msg.MsgId, path, create_time).then(
                                     function () {
-                                        data_proxy.update_data(self.groups[msg.FromUserName].NickName, self.groups[msg.FromUserName].members[sender], 2, msg.VoiceLength, create_time, self, msg.FromUserName, '', self.groups[msg.FromUserName].memberCount);
+                                        data_proxy.update_data(self.groups[msg.FromUserName].NickName, self.groups[msg.FromUserName].members[sender], 2, msg.VoiceLength, create_time, self, msg.FromUserName, '', self.groups[msg.FromUserName].memberCount, self.groups[msg.FromUserName].adminCount);
                                     },
                                     function () {
                                     });
@@ -593,7 +595,7 @@ WeChatProxy.prototype.webWxSync = function () {
                         console.log(TAG, "文字消息：", detail, length);
 
                         //var curTime = (new Date()).toLocaleString();
-                        data_proxy.update_data(self.groups[msg.FromUserName].NickName, self.groups[msg.FromUserName].members[sender], 1, length, msg.CreateTime, self, msg.FromUserName, detail, self.groups[msg.FromUserName].memberCount);
+                        data_proxy.update_data(self.groups[msg.FromUserName].NickName, self.groups[msg.FromUserName].members[sender], 1, length, msg.CreateTime, self, msg.FromUserName, detail, self.groups[msg.FromUserName].memberCount, self.groups[msg.FromUserName].adminCount);
                     }
 
                 };
@@ -782,7 +784,7 @@ WeChatProxy.prototype.getBatchContact = function (listCount, groupList) {
         console.log(post_data);
 
         var options = {
-            host: "wx.qq.com",
+            host: WX_HOST,
             path: "/cgi-bin/mmwebwx-bin/webwxbatchgetcontact?type=ex&r=" + timestamp + "&lang=zh_CN&pass_ticket=" + self.pass_ticket,
             method: 'POST',
             headers: {
@@ -814,8 +816,14 @@ WeChatProxy.prototype.getBatchContact = function (listCount, groupList) {
                         tmp_obj.NickName = data.ContactList[i].NickName;
                         tmp_obj.memberCount = data.ContactList[0].MemberList.length;
                         tmp_obj.members = {};
+                        tmp_obj.adminCount = 0;
                         for (let j = 0; j < data.ContactList[0].MemberList.length; j++) {
                             tmp_obj.members[data.ContactList[0].MemberList[j].UserName] = data.ContactList[0].MemberList[j].NickName;
+                            for (var value of data_proxy.admins) {
+                                if (value.name == data.ContactList[0].MemberList[j].NickName) {
+                                    tmp_obj.adminCount++;
+                                }
+                            }
                         }
                         ret.push(tmp_obj);
                     }
@@ -847,7 +855,7 @@ WeChatProxy.prototype.getVoice = function (msgId, path, create_time) {
         var get_data = JSON.stringify({});
 
         var options = {
-            host: "wx.qq.com",
+            host: WX_HOST,
             path: "/cgi-bin/mmwebwx-bin/webwxgetvoice?msgid=" + msgId + "&skey=" + self.skey,
             method: 'GET',
             headers: {
@@ -916,7 +924,7 @@ WeChatProxy.prototype.sendTextMsg = function (from, to, contentText) {
         console.log("content length:", post_data.length, buf.length);
 
         var options = {
-            host: "wx.qq.com",
+            host: WX_HOST,
             path: "/cgi-bin/mmwebwx-bin/webwxsendmsg?lang=zh_CN&pass_ticket=" + self.pass_ticket,
             method: 'POST',
             headers: {
@@ -966,7 +974,7 @@ WeChatProxy.prototype.uploadPre = function () {
         });
 
         var options = {
-            host: "file.wx.qq.com",
+            host: "file." + WX_HOST,
             path: "/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json",
             method: 'OPTIONS',
             headers: {
@@ -1055,7 +1063,7 @@ WeChatProxy.prototype.uploadFile = function (fileName, path, from, to) {
         var enddata = '\r\n--' + boundary + '--\r\n';
 
         var options = {
-            host: "file.wx.qq.com",
+            host: "file." + WX_HOST,
             path: "/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json",
             method: 'POST',
             headers: {
@@ -1131,7 +1139,7 @@ WeChatProxy.prototype.sendFileMsg = function (from, to, mediaId, filename, size)
         console.log(post_data);
 
         var options = {
-            host: "wx.qq.com",
+            host: WX_HOST,
             path: "/cgi-bin/mmwebwx-bin/webwxsendappmsg?fun=async&f=json&lang=zh_CN&pass_ticket=" + self.pass_ticket,
             method: 'POST',
             headers: {
