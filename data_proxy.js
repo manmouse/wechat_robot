@@ -156,10 +156,10 @@ DataProxy.prototype.update_data = function (group_name, user_name, type, length,
                                     console.log("群总人数：", memberCount, "管理员人数：", adminCount);
                                     var retStr = "";
                                     if (point == 0) {
-                                        retStr = `加油${user_name}，您刚完成了${lenStr}的${msgTypeStr}作业，本次作业没有达标哦，请继续努力。您本轮目前总分${score}，打败了${beat}%的选手。加油！`;
+                                        retStr = `[玫瑰]加油${user_name}，您刚完成了${lenStr}的${msgTypeStr}作业，本次作业没有达标哦，请继续努力[拳头]。\n您本轮目前总分${score}，打败了${beat}%的选手。加油！`;
                                     }
                                     else {
-                                        retStr = `加油${user_name}，您刚完成了${lenStr}的${msgTypeStr}作业，又得${point}分。您本轮目前总分${score}，打败了${beat}%的选手。加油！`;
+                                        retStr = `[玫瑰]加油${user_name}，您刚完成了${lenStr}的${msgTypeStr}作业，又得${point}分。\n您本轮目前总分${score}，打败了${beat}%的选手。加油！[拳头]`;
                                     }
                                     wechat_proxy.sendTextMsg(wechat_proxy.user_info.UserName, group_code, retStr).then(
                                         function () {
