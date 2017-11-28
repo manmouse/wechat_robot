@@ -10,7 +10,7 @@ const data_proxy = require('./data_proxy.js').getInstance();
 
 // export NODE_PATH="/usr/lib/node_modules:/usr/local/lib/node_modules"
 
-const WX_HOST = "wx2.qq.com";
+var WX_HOST = "wx.qq.com";
 
 var TAG = "wechat_proxy::";
 
@@ -167,6 +167,11 @@ WeChatProxy.prototype.reqForScan = function () {
 
                     var uri_arr = arr[1].split("redirect_uri=");
                     var uri = uri_arr[1].trim().split("\"")[1];
+
+                    if (uri.indexOf("wx2.qq.com") != -1) {
+                        WX_HOST = "wx2.qq.com";
+                    }
+                    console.log(TAG, "URI地址：", uri);
                     resolve(uri);
                 }
                 else {
@@ -651,86 +656,12 @@ WeChatProxy.prototype.webWxSync = function () {
                                 }
 
                             }
-
-
-                            /*
-                                                        if (self.groups[data.AddMsgList[i].FromUserName]) {
-                                                            console.log(TAG, "群消息：", self.groups[data.AddMsgList[i].FromUserName], data.AddMsgList[i].Content);
-
-                                                            //checkMsg(data.AddMsgList[i]);
-                                                            if (data.AddMsgList[i].MsgType == 34) {
-                                                                console.log(TAG, "语音消息：", data.AddMsgList[i].MsgId, data.AddMsgList[i].VoiceLength);
-
-                                                                self.getVoice(data.AddMsgList[i].MsgId).then(
-                                                                    function () {
-                                                                    },
-                                                                    function () {
-                                                                    });
-                                                            }
-                                                            else {
-                                                                if (self.groups[data.AddMsgList[i].FromUserName] == "test") {
-                                                                    //self.sendTextMsg(self.user_info.UserName, data.AddMsgList[i].FromUserName, "hello");
-                                                                    //self.sendFileMsg(self.user_info.UserName, data.AddMsgList[i].FromUserName);
-                                                                    //var upload = function () {
-                                                                    self.uploadFile('2.mp3', './audio/', self.user_info.UserName, "filehelper").then(
-                                                                        function (ret) {
-                                                                            console.log(TAG, "上传文件最终成功！");
-                                                                            self.sendFileMsg(self.user_info.UserName, data.AddMsgList[i].FromUserName, ret.MediaId, '2.mp3', ret.StartPos).then(
-                                                                                function () {
-
-                                                                                },
-                                                                                function () {
-
-                                                                                }
-                                                                            );
-                                                                        },
-                                                                        function () {
-                                                                            console.log(TAG, "上传文件最终失败！");
-                                                                        }
-                                                                    );
-                                                                    //}
-                                                                    //upload();
-                                                                }
-                                                            }
-                                                        }
-                                                        else {
-                                                            self.getBatchContact(1, [{ UserName: data.AddMsgList[i].FromUserName, EncryChatRoomId: "" }]).then(
-                                                                function (ret) {
-                                                                    self.groups[data.AddMsgList[i].FromUserName] = ret[0].NickName;
-                                                                    console.log(TAG, "群消息：", self.groups[data.AddMsgList[i].FromUserName] + ": ", data.AddMsgList[i].Content);
-                                                                    checkMsg(data.AddMsgList[i]);
-                                                                },
-                                                                function () {
-                                                                    console.log(TAG, "获取群信息失败！");
-                                                                }
-                                                            );
-                                                        }
-                            */
                         }
                         else {
                             console.log(TAG, "收到个人消息");
 
                             if (data.AddMsgList[i].MsgType == 1) {
                                 data_proxy.user_cmd(data.AddMsgList[i].FromUserName, data.AddMsgList[i].Content, self);
-                            }
-
-                            if (data.AddMsgList[i].FromUserName == self.user_info.UserName) {
-                                /*self.uploadFile('333.mp3', './audio/', self.user_info.UserName, "filehelper").then(
-                                    function (ret) {
-                                        console.log(TAG, "上传文件最终成功！");
-                                        self.sendFileMsg(self.user_info.UserName, data.AddMsgList[i].FromUserName, ret.MediaId, '333.mp3', ret.StartPos).then({
-                                            fucntion() {
-
-                                            },
-                                            function() {
-
-                                            }
-                                        });
-                                    },
-                                    function () {
-                                        console.log(TAG, "上传文件最终失败！");
-                                    }
-                                );*/
                             }
                         }
 

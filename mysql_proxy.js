@@ -4,6 +4,17 @@ const mysql = require('mysql');
 
 var TAG = "mysql_proxy::";
 
+var handleError = function (err) {
+    if (err) {
+        // 如果是连接断开，自动重新连接
+        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+            MysqlProxy.getInstance().connect();
+        } else {
+            console.error(err.stack || err);
+        }
+    }
+}
+
 function MysqlProxy() {
     this.mysqlConnection = mysql.createConnection({
         host: 'localhost',
@@ -23,7 +34,8 @@ MysqlProxy.getInstance = function () {
 };
 
 MysqlProxy.prototype.connect = function () {
-    this.mysqlConnection.connect();
+    this.mysqlConnection.connect(handleError);
+    this.mysqlConnection.on('error', handleError);
 };
 
 MysqlProxy.prototype.end = function () {

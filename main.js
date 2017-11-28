@@ -119,38 +119,3 @@ var syncCheck = function () {
 }
 
 getUUID();
-
-//var data = fs.readFileSync('aaa.txt');
-
-//console.log("文件大小：", Buffer.byteLength(data));
-
-//var stat = fs.statSync('./audio/2.mp3');
-//console.log(stat.mtime);
-
-
-
-/*
-var files = fs.readdirSync('./audio');
-
-var clips = [];
-
-files.forEach(function (file) {
-	if (file.indexOf('.') != 0) {
-		clips.push(file);
-	}
-});
-
-clips.sort(function (a, b) {
-	return a - b;
-});
-
-console.log(clips);
-
-audio_proxy.concatAudio(clips, './audio/', 'new.mp3').then(
-	function () {
-		console.log(TAG, "合并语音成功");
-	},
-	function () {
-		console.log(TAG, "合并语音失败");
-	});
-*/
