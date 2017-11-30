@@ -308,6 +308,21 @@ DataProxy.prototype.getRankStr = function (rankArr, endtime) {
     return retStr;
 };
 
+DataProxy.prototype.isDate = function (dateString) {
+    if (dateString.trim() == "") return true;
+    var r = dateString.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+    if (r == null) {
+        //console.log("请输入格式正确的日期\n\r日期格式：yyyy-mm-dd\n\r例  如：2008-08-08\n\r");
+        return false;
+    }
+    var d = new Date(r[1], r[3] - 1, r[4]);
+    var num = (d.getFullYear() == r[1] && (d.getMonth() + 1) == r[3] && d.getDate() == r[4]);
+    if (num == 0) {
+        //console.log("请输入格式正确的日期\n\r日期格式：yyyy-mm-dd\n\r例  如：2008-08-08\n\r");
+    }
+    return (num != 0);
+}
+
 DataProxy.prototype.update_data = async function (group_name, user_name, type, length, time, wechat_proxy, group_code, text, memberCount, adminCount) {
     var self = this;
 
@@ -521,7 +536,7 @@ DataProxy.prototype.user_cmd = async function (userCode, cmdStr, wechat_proxy) {
     console.log(TAG, "command:", userCode, cmdStr);
 
     var self = this;
-    var group_id = null, user_id = null, group_name = null, user_name = null;
+    var group_id = null, user_id = null, group_name = null, user_name = null, timeStr = null;
     var strArr = cmdStr.split(":");
 
     if (strArr.length < 2) {
@@ -530,11 +545,47 @@ DataProxy.prototype.user_cmd = async function (userCode, cmdStr, wechat_proxy) {
 
     var detailArr = strArr[1].split("@");
     if (detailArr.length == 2) {
-        group_name = detailArr[1];
-        user_name = detailArr[0];
+        let timeArr = detailArr[1].split("$");
+
+        if (timeArr.length == 2) {
+            group_name = timeArr[0];
+            timeStr = timeArr[1];
+            user_name = detailArr[0];
+        }
+        else {
+            group_name = detailArr[1];
+            user_name = detailArr[0];
+        }
     }
     else {
-        group_name = strArr[1];
+        let timeArr = detailArr[0].split("$");
+
+        if (timeArr.length == 2) {
+            group_name = timeArr[0];
+            timeStr = timeArr[1];
+        }
+        else {
+            group_name = strArr[1];
+        }
+
+    }
+
+    var tarTime = null;
+    if (timeStr) {
+        let timeStrArr = timeStr.split(" ");
+        if (timeStrArr.length == 2) {
+            if (self.isDate(timeStrArr[0]) && self.isDate(timeStrArr[1])) {
+                tarTime = {};
+                tarTime.starttime = timeStrArr[0] + " 00:00:00";
+                let tmpStamp = Date.parse(new Date(timeStrArr[1] + " 23:59:59")) + 1000;
+                tarTime.endtime = (new Date(tmpStamp)).toLocaleString();
+                console.log(TAG, "时间：", tarTime);
+            }
+        }
+
+        if (!tarTime) {
+            return;
+        }
     }
 
     for (var value of self.groups) {
@@ -577,6 +628,19 @@ DataProxy.prototype.user_cmd = async function (userCode, cmdStr, wechat_proxy) {
                 }
             }
             break;
+        case "pointtime":
+            if (group_id && user_id && tarTime) {
+                let totalPoint = await self.getPoint(user_id, group_id, tarTime).catch(function () { });
+                if (totalPoint != null) {
+                    wechat_proxy.sendTextMsg(wechat_proxy.user_info.UserName, userCode, "总得分：" + totalPoint).then(
+                        function () {
+                        },
+                        function () {
+                        }
+                    );
+                }
+            }
+            break;
         case "rank":
             if (group_id && roundTime) {
                 let ret = await self.getRank(group_id, roundTime).catch(function () { });
@@ -596,6 +660,23 @@ DataProxy.prototype.user_cmd = async function (userCode, cmdStr, wechat_proxy) {
                 let ret = await self.getRank(group_id, null).catch(function () { });
                 if (ret) {
                     let retStr = self.getRankStr(ret);
+                    wechat_proxy.sendTextMsg(wechat_proxy.user_info.UserName, userCode, retStr).then(
+                        function () {
+                        },
+                        function () {
+                        }
+                    );
+                }
+            }
+            break;
+        case "ranktime":
+            if (group_id && tarTime) {
+                let ret = await self.getRank(group_id, tarTime).catch(function () { });
+                if (ret) {
+                    let retStr = "";
+                    for (var rank_info of ret) {
+                        retStr += rank_info.user_name + ":  " + rank_info.total + "\n";
+                    }
                     wechat_proxy.sendTextMsg(wechat_proxy.user_info.UserName, userCode, retStr).then(
                         function () {
                         },
@@ -633,6 +714,31 @@ DataProxy.prototype.user_cmd = async function (userCode, cmdStr, wechat_proxy) {
         case "audiototal":
             if (group_id && group_name && user_id && user_name) {
                 let clips = await self.getVoicePiece(user_id, user_name, group_id, group_name, null).catch(function () { });
+                if (clips) {
+                    let tarFile = await self.concatVoice(user_name, group_name, clips).catch(function () { });
+                    if (tarFile) {
+                        wechat_proxy.uploadFile(tarFile, concat_path, wechat_proxy.user_info.UserName, "filehelper").then(
+                            function (result) {
+                                console.log(TAG, "上传文件最终成功！");
+                                fs.unlinkSync(concat_path + tarFile);
+                                wechat_proxy.sendFileMsg(wechat_proxy.user_info.UserName, userCode, result.MediaId, 'record' + '.mp3', result.StartPos).then(
+                                    function () {
+                                    },
+                                    function () {
+                                    }
+                                );
+                            },
+                            function () {
+                                console.log(TAG, "上传文件最终失败！");
+                            }
+                        );
+                    }
+                }
+            }
+            break;
+        case "audiotime":
+            if (group_id && group_name && user_id && user_name && tarTime) {
+                let clips = await self.getVoicePiece(user_id, user_name, group_id, group_name, tarTime).catch(function () { });
                 if (clips) {
                     let tarFile = await self.concatVoice(user_name, group_name, clips).catch(function () { });
                     if (tarFile) {

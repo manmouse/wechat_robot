@@ -15,7 +15,8 @@ const data_proxy = require('./data_proxy.js').getInstance();
 var TAG = "Main::";
 
 
-mysql_proxy.connect();
+//mysql_proxy.connect();
+mysql_proxy.createPool();
 // 载入数据
 data_proxy.loadData();
 
