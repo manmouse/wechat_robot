@@ -7,6 +7,7 @@ const dom = require('xmldom').DOMParser;
 const querystring = require('querystring');
 const crypto = require('crypto');
 const data_proxy = require('./data_proxy.js').getInstance();
+const emoji = require('./emoji.js');
 
 // export NODE_PATH="/usr/lib/node_modules:/usr/local/lib/node_modules"
 
@@ -749,9 +750,16 @@ WeChatProxy.prototype.getBatchContact = function (listCount, groupList) {
                         tmp_obj.members = {};
                         tmp_obj.adminCount = 0;
                         for (let j = 0; j < data.ContactList[0].MemberList.length; j++) {
-                            tmp_obj.members[data.ContactList[0].MemberList[j].UserName] = data.ContactList[0].MemberList[j].NickName;
+                            let curName = null;
+                            if (data.ContactList[0].MemberList[j].DisplayName == "") {
+                                curName = data.ContactList[0].MemberList[j].NickName;
+                            }
+                            else {
+                                curName = data.ContactList[0].MemberList[j].DisplayName;
+                            }
+                            tmp_obj.members[data.ContactList[0].MemberList[j].UserName] = curName;
                             for (var value of data_proxy.admins) {
-                                if (value.name == data.ContactList[0].MemberList[j].NickName) {
+                                if (value.name == curName) {
                                     tmp_obj.adminCount++;
                                 }
                             }
@@ -826,6 +834,19 @@ WeChatProxy.prototype.getVoice = function (msgId, path, create_time) {
 
 WeChatProxy.prototype.sendTextMsg = function (from, to, contentText) {
     var self = this;
+
+    // 替换文本中的emoji信息
+    var contentText = contentText.replace(/<span class="emoji emoji\w+"><\/span>/g, function (word) {
+        var tmpR = word.substring(24);
+        var str_arr = tmpR.split("\"");
+        var emojiCode = emoji.transferEmojiText(str_arr[0].toUpperCase());
+        if (emojiCode == str_arr[0].toUpperCase()) {
+            return word;
+        }
+        else {
+            return emojiCode;
+        }
+    });
 
     return new Promise(function (resolve, reject) {
         console.log(TAG, "发送文字消息");

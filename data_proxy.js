@@ -10,7 +10,7 @@ const concat_path = "./tmp/";
 
 const point_rule = {
     text: { length: 50, point: 1 },
-    voice: { length: 40000, point: 2 }
+    voice: { length: 20000, point: 2 }
 }
 
 var TAG = "data_proxy::";
@@ -377,10 +377,13 @@ DataProxy.prototype.update_data = async function (group_name, user_name, type, l
 
                 if (score <= 0) {
                     beat = 0;
+                    score = 0;
                 }
                 console.log("群总人数：", memberCount, "管理员人数：", adminCount);
                 var retStr = "";
                 if (point == 0) {
+                    // 不得分的发言不回复
+                    return;
                     retStr = `[玫瑰]加油${user_name}，您刚完成了${lenStr}的${msgTypeStr}作业，本次作业没有达标哦，请继续努力[拳头]。\n您本轮目前总分${score}，打败了${beat}%的选手。加油！`;
                 }
                 else {
@@ -447,6 +450,7 @@ DataProxy.prototype.update_data = async function (group_name, user_name, type, l
                 let tar_user_name = strArr[1];
                 let tar_user_id = await self.getUserId(tar_user_name, group_id).catch(function () { });
                 if (!tar_user_id) {
+                    updateNewRecord();
                     return;
                 }
 
