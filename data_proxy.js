@@ -250,7 +250,7 @@ DataProxy.prototype.addUser = function (user_name, group_id) {
     });
 }
 
-DataProxy.prototype.addRecord = function (user_id, group_id, length, time, timeStr, type, point) {
+DataProxy.prototype.addRecord = function (user_id, group_id, length, time, timeStr, type, point, text) {
     var record_table = null;
     switch (type) {
         case 1:
@@ -264,8 +264,8 @@ DataProxy.prototype.addRecord = function (user_id, group_id, length, time, timeS
             break;
     }
 
-    var sql_insert_record = "insert into " + record_table + "(user_id, group_id, length, time, create_time) values(?,?,?,?,?)";
-    var sqlParams = [user_id, group_id, length, time, timeStr];
+    var sql_insert_record = "insert into " + record_table + "(user_id, group_id, length, time, create_time, text) values(?,?,?,?,?,?)";
+    var sqlParams = [user_id, group_id, length, time, timeStr, text];
 
     return new Promise(function (resolve, reject) {
         mysql_proxy.query(sql_insert_record, sqlParams).then(
@@ -414,9 +414,9 @@ DataProxy.prototype.update_data = async function (group_name, user_name, type, l
             return;
         }
 
-        let ret = await self.addRecord(user_id, group_id, length, time, timeStr, type, point).catch(function () { });
+        let ret = await self.addRecord(user_id, group_id, length, time, timeStr, type, point, text).catch(function () { });
         if (ret) {
-            reply();
+            //暂时关闭回复 reply();
         }
     }
 
