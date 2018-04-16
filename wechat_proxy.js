@@ -415,7 +415,8 @@ WeChatProxy.prototype.syncCheck = function () {
                 var retCode_arr = arr[1].split(",");
                 if (retCode_arr[0].split(":")[1] == '"0"') {
                     console.log(TAG, "同步状态成功！", buf);
-                    if (retCode_arr[1].split(":")[1].split('"')[1] == '2') {
+                    let selector = retCode_arr[1].split(":")[1].split('"')[1];
+                    if ((selector == '2') || (selector == '4') || (selector == '6')) {
                         console.log(TAG, "有新消息！");
                         self.webWxSync().then(
                             function () {
@@ -606,7 +607,9 @@ WeChatProxy.prototype.webWxSync = function () {
 
                 };
                 var checkGroup = function (group_name) {
+                    //console.log("群名:" + group_name);
                     for (let i = 0; i < data_proxy.groups.length; i++) {
+                        //console.log("登记名:" + data_proxy.groups[i].name);
                         if (data_proxy.groups[i].name == group_name) {
                             return true;
                         }
